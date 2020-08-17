@@ -51,7 +51,7 @@ For development installation:
 ```sh
 git clone https://github.com/maargenton/crossgo.git
 cd crossgo
-CROSSGO_IMAGE=. GOOS=darwin GOARCH=amd64 crossgo
+CROSSGO_IMAGE=. GOOS=darwin GOARCH=amd64 ./content/crossgo
 ```
 
 ## Usage
