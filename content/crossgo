@@ -1,0 +1,142 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------------
+# Common function definition
+# ----------------------------------------------------------------------------
+
+# eval_cross_env() sets CROSS_TRIPLE based on defined GOOS and GOARCH
+function eval_cross_env {
+    CROSS_TRIPLE=""
+    if [[ -n "${GOOS}" && -n "${GOARCH}" ]] ; then
+        arch="${GOOS}-${GOARCH}"
+        case "${arch}" in
+            linux-amd64)
+                CROSS_TRIPLE="x86_64-linux-gnu"
+                ;;
+            linux-arm)
+                if [[ "$GOARM" == "7" ]] ; then
+                    CROSS_TRIPLE="arm-linux-gnueabihf"
+                else
+                    # Assume GOARM="5"
+                    CROSS_TRIPLE="arm-linux-gnueabi"
+                fi
+                ;;
+            linux-arm64)
+                CROSS_TRIPLE="aarch64-linux-gnu"
+                ;;
+            linux-mipsle)
+                CROSS_TRIPLE="mipsel-linux-gnu"
+                ;;
+            linux-ppc64le)
+                CROSS_TRIPLE="powerpc64le-linux-gnu"
+                ;;
+            darwin-amd64)
+                CROSS_TRIPLE="x86_64-apple-darwin${DARWIN_VERSION}"
+                ;;
+            darwin-386)
+                CROSS_TRIPLE="i386-apple-darwin${DARWIN_VERSION}"
+                ;;
+            windows-amd64)
+                CROSS_TRIPLE="x86_64-w64-mingw32"
+                ;;
+            windows-386)
+                CROSS_TRIPLE="i686-w64-mingw32"
+                ;;
+            *)
+                CROSS_TRIPLE=
+                ;;
+        esac
+    fi
+}
+
+# check_cross_env verifies that GOOS/GOARCH if specified resolved to a valid
+# CROSS_TRIPLE
+function check_cross_env {
+    if [[ -n "${GOOS}${GOARCH}" && -z "${CROSS_TRIPLE}" ]] ; then
+        echo "unsupported target environment GOOS=$GOOS, GOARCH=$GOARCH" 1>&2
+        exit 1
+    fi
+}
+
+# dump_env outputs the values of all the variables requested as argument, one
+# per line, in an environment compatible format.
+function dump_env {
+    for e in $@ ; do
+        if [ -n "${!e}" ]; then
+            echo "$e=${!e}"
+        fi
+    done
+
+}
+
+# setup_cross_env defines variables for specific file locations of the target
+# cross-environment
+function setup_cross_env {
+    if [ -n "${CROSS_TRIPLE}" ]; then
+        export CROSSGO_PATH="/usr/${CROSS_TRIPLE}/bin"
+        export CROSSGO_LD_LIBRARY_PATH="/usr/x86_64-linux-gnu/${CROSS_TRIPLE}/lib"
+    fi
+}
+
+# apply_cross_env modifies the system variables to refernce the paths determined
+# by setup_cross_env.
+function apply_cross_env {
+    if [ -n "${CROSS_TRIPLE}" ]; then
+        if [ -z "${CROSSGO_BASE_PATH}" ]; then
+            export CROSSGO_BASE_PATH=${PATH};
+        fi
+        if [ -z "${CROSSGO_BASE_LD_LIBRARY_PATH}" ]; then
+            export CROSSGO_BASE_LD_LIBRARY_PATH=${LD_LIBRARY_PATH};
+        fi
+        export PATH="${CROSSGO_PATH}:${CROSSGO_BASE_PATH}"
+        export LD_LIBRARY_PATH="${CROSSGO_LD_LIBRARY_PATH}:${CROSSGO_BASE_LD_LIBRARY_PATH}"
+    fi
+}
+
+# ----------------------------------------------------------------------------
+# Host-side entry point
+# ----------------------------------------------------------------------------
+
+if [ ! -f /.dockerenv ]; then
+    # Import environment variables
+    for e in GOOS GOARCH GOARM GO386 GOMIPS GOMIPS64 ; do
+        if [ -n "${!e}" ]; then args+=(-e $e=${!e}); fi
+    done
+
+    args+=(-v "$(pwd):/workdir")
+    args+=(--workdir "/workdir")
+    # args+=(--entrypoint crossgo)
+
+    CROSSGO_IMAGE=${CROSSGO_IMAGE:-crossgo}
+    if [ "$CROSSGO_IMAGE" == "." ] ; then
+        echo "Building local image"
+        docker build .
+        CROSSGO_IMAGE=$(docker build -q .)
+    fi
+    exec docker run --rm -it ${args[*]} ${CROSSGO_IMAGE} $*
+fi
+
+
+
+# ----------------------------------------------------------------------------
+# In-container entry point
+# ----------------------------------------------------------------------------
+
+eval_cross_env
+check_cross_env
+setup_cross_env
+apply_cross_env
+
+dump_env GOOS GOARCH GOARM GO386 GOMIPS GOMIPS64 CROSS_TRIPLE \
+    CROSSGO_PATH CROSSGO_LD_LIBRARY_PATH \
+    CROSSGO_BASE_PATH CROSSGO_BASE_LD_LIBRARY_PATH \
+    PATH LD_LIBRARY_PATH
+
+if [ $# -eq 0 ] ; then
+    # Run in interactive mode
+    echo "Interactive mode ..."
+    exec bash
+fi
+
+echo "Continuing ..."
+exec bash -c "$*"
