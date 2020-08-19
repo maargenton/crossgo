@@ -27,6 +27,7 @@ task :build do
     sed_script = "s/^CROSSGO_VERSION=.*/CROSSGO_VERSION=#{version}/"
     cmd = %w(sed -r -i) + [sed_script] + %w(build/crossgo)
     system(*cmd)
+    fail( "Failed to patch crossgo script with version string" ) if $?.exitstatus != 0
 
     # Build release archive
     archive_name = "./artifacts/crossgo-#{version}.tar.gz"
@@ -35,6 +36,7 @@ task :build do
 
     # Build container image
     system( "docker build -t maargenton/crossgo:#{version} ." )
+    fail( "Failed to build docker image" ) if $?.exitstatus != 0
 end
 
 desc 'Publish crossgo image and release archive after building it'
@@ -50,6 +52,7 @@ task :publish => [:build] do
     version = BuildInfo.default.version
     image_name = "maargenton/crossgo:#{version}"
     system( "docker push #{image_name}")
+    fail( "Failed to push docker image" ) if $?.exitstatus != 0
 end
 
 desc 'Build crossgo image and run it interactively'
