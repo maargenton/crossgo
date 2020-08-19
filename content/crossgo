@@ -1,5 +1,9 @@
 #!/bin/bash
 
+CROSSGO_VERSION=
+CROSSGO_IMAGE=${CROSSGO_IMAGE:-maargenton/crossgo:${CROSSGO_VERSION}}
+
+
 # ----------------------------------------------------------------------------
 # Common function definition
 # ----------------------------------------------------------------------------
@@ -102,17 +106,10 @@ if [ ! -f /.dockerenv ]; then
     for e in GOOS GOARCH GOARM GO386 GOMIPS GOMIPS64 ; do
         if [ -n "${!e}" ]; then args+=(-e $e=${!e}); fi
     done
-
     args+=(-v "$(pwd):/workdir")
     args+=(--workdir "/workdir")
-    # args+=(--entrypoint crossgo)
 
-    CROSSGO_IMAGE=${CROSSGO_IMAGE:-crossgo}
-    if [ "$CROSSGO_IMAGE" == "." ] ; then
-        echo "Building local image"
-        docker build .
-        CROSSGO_IMAGE=$(docker build -q .)
-    fi
+    echo "crossgo ${CROSSGO_VERSION}, entering container ${CROSSGO_IMAGE} ..."
     exec docker run --rm -it ${args[*]} ${CROSSGO_IMAGE} $*
 fi
 
@@ -127,16 +124,11 @@ check_cross_env
 setup_cross_env
 apply_cross_env
 
-dump_env GOOS GOARCH GOARM GO386 GOMIPS GOMIPS64 CROSS_TRIPLE \
-    CROSSGO_PATH CROSSGO_LD_LIBRARY_PATH \
-    CROSSGO_BASE_PATH CROSSGO_BASE_LD_LIBRARY_PATH \
-    PATH LD_LIBRARY_PATH
-
 if [ $# -eq 0 ] ; then
     # Run in interactive mode
-    echo "Interactive mode ..."
+    echo "crossgo ${CROSSGO_VERSION}, interactive mode ..."
     exec bash
 fi
 
-echo "Continuing ..."
+echo "crossgo ${CROSSGO_VERSION}, running: $*"
 exec bash -c "$*"

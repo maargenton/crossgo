@@ -153,6 +153,7 @@ ENV LD_LIBRARY_PATH /usr/osxcross/lib:$LD_LIBRARY_PATH
 # Install Go
 ENV PATH /usr/local/go/bin:$PATH
 ENV GOPATH /go
+ENV CGO_ENABLED 1
 ENV PATH $GOPATH/bin:$PATH
 
 ARG GO_VERSION=1.14.7
@@ -167,5 +168,5 @@ RUN set -eux; \
 
 
 # Install crossgo entrypoint
-COPY content/crossgo /usr/bin
+COPY build/crossgo /usr/bin
 ENTRYPOINT ["/usr/bin/crossgo"]
