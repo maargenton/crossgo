@@ -94,6 +94,7 @@ function apply_cross_env {
         fi
         export PATH="${CROSSGO_PATH}:${CROSSGO_BASE_PATH}"
         export LD_LIBRARY_PATH="${CROSSGO_LD_LIBRARY_PATH}:${CROSSGO_BASE_LD_LIBRARY_PATH}"
+        export PROMPT_CTX="${GOOS}-${GOARCH}"
     fi
 }
 

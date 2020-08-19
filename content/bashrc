@@ -40,4 +40,4 @@ __prompt_command() {
 }
 
 PROMPT_COMMAND=__prompt_command # Func to gen PS1 after CMDs
-export PROMPT_CTX=crossgo
+export PROMPT_CTX=${PROMPT_CTX:-crossgo}

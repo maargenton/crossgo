@@ -13,8 +13,6 @@ RUN set -ex; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 
-COPY content/bashrc /root/.bashrc
-
 
 # From https://github.com/multiarch/crossbuild
 RUN set -eux; echo "Installing cross-build toolchains" \
@@ -169,4 +167,6 @@ RUN set -eux; \
 
 # Install crossgo entrypoint
 COPY build/crossgo /usr/bin
+COPY content/bashrc /root/.bashrc
+
 ENTRYPOINT ["/usr/bin/crossgo"]
