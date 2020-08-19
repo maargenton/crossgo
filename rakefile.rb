@@ -31,9 +31,25 @@ task :build do
     # Build release archive
     archive_name = "./artifacts/crossgo-#{version}.tar.gz"
     system( "cd build; tar czf #{archive_name} crossgo" )
+    system( "cd build/artifacts; shasum -a 256 *.tar.gz > checksumfile" )
 
     # Build container image
     system( "docker build -t maargenton/crossgo:#{version} ." )
+end
+
+desc 'Publish crossgo image and release archive after building it'
+task :publish => [:build] do
+    username = ENV['DOCKER_USERNAME'] || ""
+    push_key = ENV['DOCKER_PUSH_KEY'] || ""
+    if !username.empty? && !push_key.empty?
+        puts "Authenticating with docker.com for user #{username}..."
+        system("echo #{push_key} | docker login --username #{username} --password-stdin")
+        puts "Failed to authenticate with docker.com" if $?.exitstatus != 0
+    end
+
+    version = BuildInfo.default.version
+    image_name = "maargenton/crossgo:#{version}"
+    system( "docker push #{image_name}")
 end
 
 desc 'Build crossgo image and run it interactively'
