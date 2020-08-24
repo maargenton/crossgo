@@ -47,8 +47,8 @@ daemon.
 
 
 ```sh
-wget https://github.com/maargenton/crossgo/releases/download/v0.1.0/crossgo-v0.1.0.tar.gz
-tar -C /usr/local -xf crossgo-v0.1.0.tgz
+wget https://github.com/maargenton/crossgo/releases/download/v1.0.0/crossgo-v1.0.0.tar.gz
+tar -C /usr/local -xf crossgo-v1.0.0.tgz
 ```
 
 For development installation:
