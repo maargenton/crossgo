@@ -3,6 +3,13 @@
 Container-based cross-compiler package for CGo projects and their native
 dependencies
 
+[![Build](
+https://img.shields.io/github/workflow/status/maargenton/crossgo/publish)](
+https://github.com/maargenton/crossgo/actions)
+[![Release](
+https://img.shields.io/github/v/release/maargenton/crossgo)](
+https://github.com/maargenton/crossgo/releases/latest)
+
 ## Overview
 
 **crossgo** has two main components: a container image containing all the
@@ -40,18 +47,15 @@ daemon.
 
 
 ```sh
-# Prospective install step -- Packages may not be available online
-wget "https://github.com/maargenton/crossgo/archive/crossgo-v1.0.0.tgz"
-echo "4a7fa60f323ee1416a4b1425aefc37ea359e9d64df19c326a58953a97ad41ea5 crossgo-v1.0.0.tgz" | sha256sum -c -
-tar xvzf crossgo-v1.0.0.tgz
-mv crossgo /usr/local/bin
+wget https://github.com/maargenton/crossgo/releases/download/v0.1.0/crossgo-v0.1.0.tar.gz
+tar -C /usr/local -xf crossgo-v0.1.0.tgz
 ```
 
 For development installation:
 ```sh
 git clone https://github.com/maargenton/crossgo.git
 cd crossgo
-CROSSGO_IMAGE=. GOOS=darwin GOARCH=amd64 ./content/crossgo
+GOOS=darwin GOARCH=amd64 rake
 ```
 
 ## Usage

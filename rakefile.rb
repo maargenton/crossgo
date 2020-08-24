@@ -18,21 +18,28 @@ end
 
 desc 'Build and publish both release archive and associated container image'
 task :build do
-    FileUtils.makedirs( './build/artifacts' )
-    FileUtils.cp( "./content/crossgo", "./build" )
-    FileUtils.chmod( 'a+x', "./build/crossgo" )
+    FileUtils.makedirs( ['./build/artifacts', './build/bin'] )
+    FileUtils.cp( "./content/crossgo", "./build/bin" )
+    FileUtils.chmod( 'a+x', "./build/bin/crossgo" )
 
     # Inject build version into crossgo script
     version = BuildInfo.default.version
     sed_script = "s/^CROSSGO_VERSION=.*/CROSSGO_VERSION=#{version}/"
-    cmd = %w(sed -r -i) + [sed_script] + %w(build/crossgo)
+    cmd = %w(sed -r -i) + [sed_script] + %w(build/bin/crossgo)
     system(*cmd)
     fail( "Failed to patch crossgo script with version string" ) if $?.exitstatus != 0
 
     # Build release archive
     archive_name = "./artifacts/crossgo-#{version}.tar.gz"
-    system( "cd build; tar czf #{archive_name} crossgo" )
+    system( "cd build; tar czf #{archive_name} bin" )
     system( "cd build/artifacts; shasum -a 256 *.tar.gz > checksumfile" )
+
+    # Generate release notes
+    rn = generate_release_notes("crossgo", version,
+        input:'doc/RELEASES.md',
+        checksums:'build/artifacts/checksumfile'
+    )
+    File.write( 'build/release_notes', rn)
 
     # Build container image
     system( "docker build -t maargenton/crossgo:#{version} ." )
@@ -57,7 +64,7 @@ end
 
 desc 'Build crossgo image and run it interactively'
 task :run => [:build] do
-    system( "cd build; ./crossgo" )
+    system( "cd build; ./bin/crossgo" )
 end
 
 
@@ -136,30 +143,30 @@ end
 
 
 # ----------------------------------------------------------------------------
-# DockerHelper : Helper to build go projects
+# Release notes generator
 # ----------------------------------------------------------------------------
 
-def docker_registry_tags(base_tag)
-    return [github_registry_tag(base_tag)]
+def generate_release_notes(prefix, version, input:nil, checksums:nil)
+    rn = "#{prefix} #{version}\n\n"
+    rn += load_release_notes(input, version) if input
+    rn += "\n## Checksums\n\n```\n" + File.read(checksums) + "```\n" if checksums
+    rn
 end
 
-def github_registry_tag(base_tag)
-    return if ENV['GITHUB_ACTOR'].nil? || ENV['GITHUB_REPOSITORY'].nil?
-    if ENV['GITHUB_TOKEN'].nil? then
-        puts "Found GitHub Actiona context but no 'GITHUB_TOKEN'."
-        puts "Image will not be pushed to GitHub package registry."
-        puts "To resolve this issue, add the following to your workflow:"
-        puts "  env:"
-        puts "    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
-        return
+def load_release_notes(filename, version)
+    notes, capture = [], false
+    File.readlines(filename).each do |l|
+        if l.start_with?( "# ")
+            break if capture
+            capture = true if l[2..-1].strip() == version
+        elsif capture
+            notes << l
+        end
     end
-    # Authenticate
-    puts "Authenticating with docker.pkg.github.com..."
-    system("echo ${GITHUB_TOKEN} | docker login docker.pkg.github.com --username ${GITHUB_ACTOR} --password-stdin")
-    puts "Failed to authenticate with docker.pkg.github.com" if $?.exitstatus != 0
-
-    return File.join('docker.pkg.github.com', ENV['GITHUB_REPOSITORY'], base_tag)
+    notes.shift while (notes.first || "-").strip == ""
+    return notes.join()
 end
+
 
 
 # ----------------------------------------------------------------------------

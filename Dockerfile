@@ -166,7 +166,7 @@ RUN set -eux; \
 
 
 # Install crossgo entrypoint
-COPY build/crossgo /usr/bin
+COPY build/bin/crossgo /usr/bin
 COPY content/bashrc /root/.bashrc
 
 ENTRYPOINT ["/usr/bin/crossgo"]
