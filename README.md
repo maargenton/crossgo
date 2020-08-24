@@ -4,7 +4,7 @@ Container-based cross-compiler package for CGo projects and their native
 dependencies
 
 [![Build](
-https://img.shields.io/github/workflow/status/maargenton/crossgo/publish)](
+https://img.shields.io/github/workflow/status/maargenton/crossgo/ci)](
 https://github.com/maargenton/crossgo/actions)
 [![Release](
 https://img.shields.io/github/v/release/maargenton/crossgo)](
