@@ -147,7 +147,7 @@ end
 # ----------------------------------------------------------------------------
 
 def generate_release_notes(prefix, version, input:nil, checksums:nil)
-    rn = "#{prefix} #{version}\n\n"
+    rn = "" # "#{prefix} #{version}\n\n"
     rn += load_release_notes(input, version) if input
     rn += "\n## Checksums\n\n```\n" + File.read(checksums) + "```\n" if checksums
     rn
